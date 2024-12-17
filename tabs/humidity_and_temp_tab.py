@@ -13,110 +13,186 @@ def build_humidity_and_temp_tab(data: DataFrame):
 
     romania_data = data[(data["Country"] == "RO")]
     selected_city = st.sidebar.selectbox("Select a City:", romania_data["City"].unique())
-    temperature_data = data[(data["City"] == selected_city) & (data["Specie"] == "temperature")]
-    humidity_data = data[(data["City"] == selected_city) & (data["Specie"] == "humidity")]
-    pm10_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm10")]
-    pm25_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm25")]
 
+    # Filter and clean temperature data
+    temperature_data = data[(data["City"] == selected_city) & (data["Specie"] == "temperature")].copy()
+    temperature_data['median'] = pd.to_numeric(temperature_data['median'], errors='coerce')
+    temperature_data = temperature_data.dropna(subset=['median']).reset_index(drop=True)
+    st.write("Cleaned temperature_data:", temperature_data.head())
+
+    # Filter and clean humidity data
+    humidity_data = data[(data["City"] == selected_city) & (data["Specie"] == "humidity")].copy()
+    humidity_data['median'] = pd.to_numeric(humidity_data['median'], errors='coerce')
+    humidity_data = humidity_data.dropna(subset=['median']).reset_index(drop=True)
+    st.write("Cleaned humidity_data:", humidity_data.head())
+
+    # Filter and clean PM10 data
+    pm10_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm10")].copy()
+    pm10_data['median'] = pd.to_numeric(pm10_data['median'], errors='coerce')
+    pm10_data = pm10_data.dropna(subset=['median']).reset_index(drop=True)
+    st.write("Cleaned pm10_data:", pm10_data.head())
+
+    # Filter and clean PM25 data
+    pm25_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm25")].copy()
+    pm25_data['median'] = pd.to_numeric(pm25_data['median'], errors='coerce')
+    pm25_data = pm25_data.dropna(subset=['median']).reset_index(drop=True)
+    st.write("Cleaned pm25_data:", pm25_data.head())
+
+    # Create columns
     col1, col2 = st.columns(2)
 
-    # Create and display bar plot for temperature
+    # Handle and plot temperature data
     if not temperature_data.empty:
         col2.subheader(f"Monthly Temperature in {selected_city}")
-        temperature_data['Date'] = pd.to_datetime(temperature_data['Date'])
-        temperature_data['Month'] = temperature_data['Date'].dt.month_name()
 
-        monthly_temp = temperature_data.groupby('Month')['median'].mean()
+        # Convert 'Date' to datetime and drop invalid rows
+        if 'Date' in temperature_data.columns:
+            temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
+            temperature_data = temperature_data.dropna(subset=['Date'])
+            temperature_data['Month'] = temperature_data['Date'].dt.month_name()
 
-        months_order = ["January", "February", "March", "April", "May", "June", 
-                        "July", "August", "September", "October", "November", "December"]
-        monthly_temp = monthly_temp.reindex(months_order, axis=0).dropna()
+            # Group by month
+            monthly_temp = temperature_data.groupby('Month')['median'].mean()
 
-        fig_temp = px.bar(
-            x=monthly_temp.index,
-            y=monthly_temp.values,
-            labels={"x": "Month", "y": "Average Temperature (°C)"},
-            title="Average Monthly Temperature",
-            color_discrete_sequence=["orange"]
-        )
+            # Ensure months appear in correct order
+            months_order = ["January", "February", "March", "April", "May", "June",
+                            "July", "August", "September", "October", "November", "December"]
+            monthly_temp = monthly_temp.reindex(months_order, axis=0).dropna()
 
-        fig_temp.update_layout(xaxis_title="Month", yaxis_title="Average Temperature (°C)")
+            # Create and display the bar plot
+            fig_temp = px.bar(
+                x=monthly_temp.index,
+                y=monthly_temp.values,
+                labels={"x": "Month", "y": "Average Temperature (°C)"},
+                title="Average Monthly Temperature",
+                color_discrete_sequence=["orange"]
+            )
 
-        col2.plotly_chart(fig_temp)
+            fig_temp.update_layout(xaxis_title="Month", yaxis_title="Average Temperature (°C)")
+
+            col2.plotly_chart(fig_temp)
+        else:
+            col2.write("No valid 'Date' column available in temperature data.")
     else:
         col2.write("No temperature data available for the selected city.")
 
+    # Handle and plot humidity data
     if not humidity_data.empty:
         col1.subheader(f"Monthly Humidity in {selected_city}")
 
-        humidity_data['Date'] = pd.to_datetime(humidity_data['Date'])
-        humidity_data['Month'] = humidity_data['Date'].dt.month_name()
+        # Convert 'Date' to datetime and drop invalid rows
+        if 'Date' in humidity_data.columns:
+            humidity_data['Date'] = pd.to_datetime(humidity_data['Date'], errors='coerce')
+            humidity_data = humidity_data.dropna(subset=['Date'])
+            humidity_data['Month'] = humidity_data['Date'].dt.month_name()
 
-        monthly_humi = humidity_data.groupby('Month')['median'].mean()
+            # Group by month
+            monthly_humi = humidity_data.groupby('Month')['median'].mean()
 
-        monthly_humi = monthly_humi.reindex(months_order, axis=0).dropna()
+            # Ensure months appear in correct order
+            monthly_humi = monthly_humi.reindex(months_order, axis=0).dropna()
 
-        fig_humi = px.bar(
-            x=monthly_humi.index,
-            y=monthly_humi.values,
-            labels={"x": "Month", "y": "Average Humidity"},
-            title="Average Monthly Humidity",
-            color_discrete_sequence=["blue"]
-        )
+            # Create and display the bar plot
+            fig_humi = px.bar(
+                x=monthly_humi.index,
+                y=monthly_humi.values,
+                labels={"x": "Month", "y": "Average Humidity"},
+                title="Average Monthly Humidity",
+                color_discrete_sequence=["blue"]
+            )
 
-        fig_humi.update_layout(xaxis_title="Month", yaxis_title="Average Humidity")
+            fig_humi.update_layout(xaxis_title="Month", yaxis_title="Average Humidity")
 
-        col1.plotly_chart(fig_humi)
+            col1.plotly_chart(fig_humi)
+        else:
+            col1.write("No valid 'Date' column available in humidity data.")
     else:
         col1.write("No humidity data available for the selected city.")
 
-    # Merge temperature and PM10 data on Date to prepare for plotting
+    # Handle scatter plot of temperature vs PM10
     if not temperature_data.empty and not pm10_data.empty:
-        temperature_data['Date'] = pd.to_datetime(temperature_data['Date'])
-        pm10_data['Date'] = pd.to_datetime(pm10_data['Date'])
+        # Convert 'Date' to datetime and drop invalid rows
+        if 'Date' in temperature_data.columns and 'Date' in pm10_data.columns:
+            temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
+            pm10_data['Date'] = pd.to_datetime(pm10_data['Date'], errors='coerce')
 
-        temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
-        pm10_data = pm10_data[['Date', 'median']].rename(columns={'median': 'PM10'})
+            temperature_data = temperature_data.dropna(subset=['Date', 'median'])
+            pm10_data = pm10_data.dropna(subset=['Date', 'median'])
 
-        combined_data = pd.merge(temperature_data, pm10_data, on='Date', how='inner')
+            # Prepare and merge data
+            temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
+            pm10_data = pm10_data[['Date', 'median']].rename(columns={'median': 'PM10'})
 
-        col2.subheader(f"Scatter Plot of Temperature vs PM10 in {selected_city} with Regression Line")
+            combined_data = pd.merge(temperature_data, pm10_data, on='Date', how='inner')
 
-        fig_temp_pm10 = px.scatter(
-            combined_data,
-            x="Temperature",
-            y="PM10",
-            trendline="ols",
-            labels={"Temperature": "Temperature (°C)", "PM10": "PM10 (µg/m³)"},
-            title="Temperature vs PM10 with Regression Line",
-            color_discrete_sequence=["red"]
-        )
+            if not combined_data.empty:
+                col2.subheader(f"Scatter Plot of Temperature vs PM10 in {selected_city} with Regression Line")
 
-        col2.plotly_chart(fig_temp_pm10)
+                # Create and display scatter plot
+                fig_temp_pm10 = px.scatter(
+                    combined_data,
+                    x="Temperature",
+                    y="PM10",
+                    trendline="ols",
+                    labels={"Temperature": "Temperature (°C)", "PM10": "PM10 (µg/m³)"},
+                    title="Temperature vs PM10 with Regression Line",
+                    color_discrete_sequence=["red"]
+                )
+
+                col2.plotly_chart(fig_temp_pm10)
+            else:
+                col2.write("No matching data available for scatter plot after merging.")
+        else:
+            col2.write("No valid 'Date' column found in temperature or PM10 data.")
     else:
         col2.write("Insufficient data for temperature and PM10 to create scatter plot.")
 
     if not temperature_data.empty and not pm25_data.empty:
-        temperature_data['Date'] = pd.to_datetime(temperature_data['Date'])
-        pm25_data['Date'] = pd.to_datetime(pm25_data['Date'])
+        # Check and clean temperature_data
+        if 'Date' in temperature_data.columns and 'median' in temperature_data.columns:
+            temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
+            temperature_data = temperature_data.dropna(subset=['Date', 'median'])
+            temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
+        else:
+            st.write("No valid 'Date' or 'median' columns in temperature data for scatter plot.")
+            return
 
-        temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
-        pm25_data = pm25_data[['Date', 'median']].rename(columns={'median': 'PM25'})
+        # Check and clean pm25_data
+        if 'Date' in pm25_data.columns and 'median' in pm25_data.columns:
+            pm25_data['Date'] = pd.to_datetime(pm25_data['Date'], errors='coerce')
+            pm25_data = pm25_data.dropna(subset=['Date', 'median'])
+            pm25_data = pm25_data[['Date', 'median']].rename(columns={'median': 'PM25'})
+        else:
+            st.write("No valid 'Date' or 'median' columns in PM25 data for scatter plot.")
+            return
 
+        # Recheck if data is still valid after cleaning
+        if temperature_data.empty:
+            st.write("No valid temperature data available after cleaning for scatter plot.")
+            return
+        if pm25_data.empty:
+            st.write("No valid PM25 data available after cleaning for scatter plot.")
+            return
+
+        # Merge cleaned data
         combined_data = pd.merge(temperature_data, pm25_data, on='Date', how='inner')
 
-        col1.subheader(f"Scatter Plot of Temperature vs PM25 in {selected_city} with Regression Line")
+        if not combined_data.empty:
+            # Create and display the scatter plot
+            col1.subheader(f"Scatter Plot of Temperature vs PM25 in {selected_city} with Regression Line")
 
-        fig_temp_pm25 = px.scatter(
-            combined_data,
-            x="Temperature",
-            y="PM25",
-            trendline="ols",
-            labels={"Temperature": "Temperature (°C)", "PM25": "PM25 (µg/m³)"},
-            title="Temperature vs PM25 with Regression Line",
-            color_discrete_sequence=["green"]
-        )
+            fig_temp_pm25 = px.scatter(
+                combined_data,
+                x="Temperature",
+                y="PM25",
+                trendline="ols",
+                labels={"Temperature": "Temperature (°C)", "PM25": "PM25 (µg/m³)"},
+                title="Temperature vs PM25 with Regression Line",
+                color_discrete_sequence=["green"]
+            )
 
-        col1.plotly_chart(fig_temp_pm25)
+            col1.plotly_chart(fig_temp_pm25)
+        else:
+            st.write("No matching data available for the scatter plot after merging.")
     else:
-        col1.write("Insufficient data for temperature and PM25 to create scatter plot.")
+        st.write("Insufficient data for temperature and PM25 to create scatter plot.")

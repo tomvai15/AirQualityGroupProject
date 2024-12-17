@@ -4,8 +4,13 @@ import pandas as pd
 import plotly.express as px
 
 def build_general_tab(data: DataFrame):
-    # Filter temperature data
-    temperature_data = data[data['Specie'] == "temperature"]
+    # Filter and clean temperature data
+    temperature_data = data[data['Specie'] == "temperature"].copy()
+    temperature_data['median'] = pd.to_numeric(temperature_data['median'], errors='coerce')
+    temperature_data = temperature_data.dropna(subset=['median']).reset_index(drop=True)
+
+    st.write("Cleaned temperature_data:", temperature_data.head())
+
     if not temperature_data.empty:
         # Multiselect for cities
         selected_cities = st.multiselect(
@@ -43,10 +48,14 @@ def build_general_tab(data: DataFrame):
 
             st.plotly_chart(fig_temp)
         else:
-            st.write("No temperature data available for the selected cities and date range.")
+            st.write("No temperature data available for the selected cities.")
 
-        # Filter PM10 data based on selected cities
-        filtered_pm10_data = data[(data['Specie'] == "pm10") & (data['City'].isin(selected_cities))]
+        # Filter and clean PM10 data based on selected cities
+        filtered_pm10_data = data[(data['Specie'] == "pm10") & (data['City'].isin(selected_cities))].copy()
+        filtered_pm10_data['median'] = pd.to_numeric(filtered_pm10_data['median'], errors='coerce')
+        filtered_pm10_data = filtered_pm10_data.dropna(subset=['median']).reset_index(drop=True)
+
+        st.write("Cleaned filtered_pm10_data:", filtered_pm10_data.head())
 
         if not filtered_pm10_data.empty:
             st.subheader("Boxplot of PM10 for Selected Cities")
@@ -74,6 +83,6 @@ def build_general_tab(data: DataFrame):
 
             st.plotly_chart(fig_pm10)
         else:
-            st.write("No PM10 data available for the selected cities and date range.")
+            st.write("No PM10 data available for the selected cities.")
     else:
         st.write("No temperature data available for plotting.")
