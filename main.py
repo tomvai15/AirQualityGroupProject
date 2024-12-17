@@ -13,6 +13,7 @@ def load_data(file_path):
     return pd.read_csv(file_path)
 
 data = load_data("data/romania_data.csv")
+st.write("Columns in dataset:", data.columns)
 
 general_tab, humidity_and_temp_tab, air_quality_tab = st.tabs(["General", "Humidity & Temperature", "Air quality"])
 
