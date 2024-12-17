@@ -111,74 +111,45 @@ def build_humidity_and_temp_tab(data: DataFrame):
 
     # Handle scatter plot of temperature vs PM10
     if not temperature_data.empty and not pm10_data.empty:
-        # Convert 'Date' to datetime and drop invalid rows
-        if 'Date' in temperature_data.columns and 'Date' in pm10_data.columns:
-            temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
-            pm10_data['Date'] = pd.to_datetime(pm10_data['Date'], errors='coerce')
+        temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
+        pm10_data['Date'] = pd.to_datetime(pm10_data['Date'], errors='coerce')
 
-            temperature_data = temperature_data.dropna(subset=['Date', 'median'])
-            pm10_data = pm10_data.dropna(subset=['Date', 'median'])
+        temperature_data = temperature_data.dropna(subset=['Date', 'median']).rename(columns={'median': 'Temperature'})
+        pm10_data = pm10_data.dropna(subset=['Date', 'median']).rename(columns={'median': 'PM10'})
 
-            # Prepare and merge data
-            temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
-            pm10_data = pm10_data[['Date', 'median']].rename(columns={'median': 'PM10'})
-
-            combined_data = pd.merge(temperature_data, pm10_data, on='Date', how='inner')
-
-            if not combined_data.empty:
-                col2.subheader(f"Scatter Plot of Temperature vs PM10 in {selected_city} with Regression Line")
-
-                # Create and display scatter plot
-                fig_temp_pm10 = px.scatter(
-                    combined_data,
-                    x="Temperature",
-                    y="PM10",
-                    trendline="ols",
-                    labels={"Temperature": "Temperature (°C)", "PM10": "PM10 (µg/m³)"},
-                    title="Temperature vs PM10 with Regression Line",
-                    color_discrete_sequence=["red"]
-                )
-
-                col2.plotly_chart(fig_temp_pm10)
-            else:
-                col2.write("No matching data available for scatter plot after merging.")
-        else:
-            col2.write("No valid 'Date' column found in temperature or PM10 data.")
-    else:
-        col2.write("Insufficient data for temperature and PM10 to create scatter plot.")
-
-    if not temperature_data.empty and not pm25_data.empty:
-        # Check and clean temperature_data
-        if 'Date' in temperature_data.columns and 'median' in temperature_data.columns:
-            temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
-            temperature_data = temperature_data.dropna(subset=['Date', 'median'])
-            temperature_data = temperature_data[['Date', 'median']].rename(columns={'median': 'Temperature'})
-        else:
-            st.write("No valid 'Date' or 'median' columns in temperature data for scatter plot.")
-            return
-
-        # Check and clean pm25_data
-        if 'Date' in pm25_data.columns and 'median' in pm25_data.columns:
-            pm25_data['Date'] = pd.to_datetime(pm25_data['Date'], errors='coerce')
-            pm25_data = pm25_data.dropna(subset=['Date', 'median'])
-            pm25_data = pm25_data[['Date', 'median']].rename(columns={'median': 'PM25'})
-        else:
-            st.write("No valid 'Date' or 'median' columns in PM25 data for scatter plot.")
-            return
-
-        # Recheck if data is still valid after cleaning
-        if temperature_data.empty:
-            st.write("No valid temperature data available after cleaning for scatter plot.")
-            return
-        if pm25_data.empty:
-            st.write("No valid PM25 data available after cleaning for scatter plot.")
-            return
-
-        # Merge cleaned data
-        combined_data = pd.merge(temperature_data, pm25_data, on='Date', how='inner')
+        combined_data = pd.merge(temperature_data, pm10_data, on='Date', how='inner')
 
         if not combined_data.empty:
-            # Create and display the scatter plot
+            col2.subheader(f"Scatter Plot of Temperature vs PM10 in {selected_city} with Regression Line")
+
+            fig_temp_pm10 = px.scatter(
+                combined_data,
+                x="Temperature",
+                y="PM10",
+                trendline="ols",
+                labels={"Temperature": "Temperature (°C)", "PM10": "PM10 (µg/m³)"},
+                title="Temperature vs PM10 with Regression Line",
+                color_discrete_sequence=["red"]
+            )
+
+            col2.plotly_chart(fig_temp_pm10)
+        else:
+            col2.write("No matching data available for scatter plot after merging.")
+
+    # Handle scatter plot of temperature vs PM25
+    if not data.empty:
+        temp_data_pm25 = data[(data["City"] == selected_city) & (data["Specie"] == "temperature")].copy()
+        pm25_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm25")].copy()
+
+        temp_data_pm25['Date'] = pd.to_datetime(temp_data_pm25['Date'], errors='coerce')
+        pm25_data['Date'] = pd.to_datetime(pm25_data['Date'], errors='coerce')
+
+        temp_data_pm25 = temp_data_pm25.dropna(subset=['Date', 'median']).rename(columns={'median': 'Temperature'})
+        pm25_data = pm25_data.dropna(subset=['Date', 'median']).rename(columns={'median': 'PM25'})
+
+        combined_data = pd.merge(temp_data_pm25, pm25_data, on='Date', how='inner')
+
+        if not combined_data.empty:
             col1.subheader(f"Scatter Plot of Temperature vs PM25 in {selected_city} with Regression Line")
 
             fig_temp_pm25 = px.scatter(
@@ -193,6 +164,6 @@ def build_humidity_and_temp_tab(data: DataFrame):
 
             col1.plotly_chart(fig_temp_pm25)
         else:
-            st.write("No matching data available for the scatter plot after merging.")
+            col1.write("No matching data available for the scatter plot after merging.")
     else:
-        st.write("Insufficient data for temperature and PM25 to create scatter plot.")
+        col1.write("Insufficient data for temperature and PM25 to create scatter plot.")
