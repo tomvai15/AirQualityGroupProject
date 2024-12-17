@@ -5,7 +5,6 @@ from tabs.air_quality_tab import build_air_quality_tab
 from tabs.forecasting_tab import build_forecasting_tab
 from tabs.general_tab import build_general_tab
 from tabs.humidity_and_temp_tab import build_humidity_and_temp_tab
-from tabs.api_tab import build_api_tab
 from tabs.insights_tab_v2 import build_insights_tab
 
 st.set_page_config(layout="wide")
@@ -32,19 +31,13 @@ required_pollutants = ['pm10', 'pm25', 'no2', 'o3', 'so2', 'co']
 unique_values_excluding_pollutants = [specie for specie in data["Specie"].unique() if specie not in required_pollutants]
 selected_regressor = st.sidebar.selectbox("Select a regressor:", unique_values_excluding_pollutants)
 
-general_tab, humidity_and_temp_tab, air_quality_tab, api_tab, insights_tab, forecasting_tab = st.tabs(["General", "Humidity & Temperature", "Air quality", "API tab'as", "Insights", "Forecasting"])
+general_tab, humidity_and_temp_tab, insights_tab, forecasting_tab = st.tabs(["General", "City", "Insights", "Forecasting"])
 
 with humidity_and_temp_tab:
     build_humidity_and_temp_tab(data, selected_city)
 
-with air_quality_tab:
-    build_air_quality_tab(data, selected_cities)
-
 with general_tab:
     build_general_tab(data, selected_cities)
-
-with api_tab:
-    build_api_tab(data, selected_cities)
 
 with insights_tab:
     build_insights_tab(data, selected_cities, selected_city)
