@@ -3,24 +3,15 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-def build_insights_tab(data: DataFrame):
+def build_insights_tab(data: DataFrame, selected_cities):
     # Streamlit App
     st.title("Romania Air Quality and Weather Insights")
 
     # Preprocessing
-    romania_data = data[data["Country"] == "RO"].copy()
+    romania_data = data.copy()
     romania_data['Date'] = pd.to_datetime(romania_data['Date'], errors='coerce')
     romania_data = romania_data.dropna(subset=['Date', 'median'])  # Ensure valid rows
     romania_data['Month'] = romania_data['Date'].dt.month_name()  # Month names
-
-    # Sidebar Filters
-    st.sidebar.header("Filters")
-    selected_cities = st.sidebar.multiselect(
-        "Select Cities",
-        options=romania_data['City'].unique(),
-        default=romania_data['City'].unique(),
-        key="city_filter_insights"
-    )
 
     romania_data = romania_data[romania_data['City'].isin(selected_cities)]
 

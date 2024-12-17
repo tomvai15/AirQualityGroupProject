@@ -41,51 +41,11 @@ def perform_backtest_with_percentage(data: pd.DataFrame, train_percentage: float
     errors = {'MAE': mae, 'MAPE': mape}
     return errors, results_df
 
-# Streamlit UI for Multiple Backtesting Scenarios
-def build_backtesting_ui():
-    st.title("Prophet Model Backtesting - Training Data Percentages")
-
-    # Data upload
-    uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=['csv'])
-
-    if uploaded_file:
-        # Load and prepare the data
-        data = pd.read_csv(uploaded_file)
-        data['Date'] = pd.to_datetime(data['Date'])
-        data.rename(columns={"Date": "ds", "api": "y"}, inplace=True)  # Prophet requires 'ds' and 'y'
-
-        st.write("Loaded Data Preview:", data.head())
-
-        # Forecast horizon input
-        forecast_horizon = st.sidebar.slider("Forecast Horizon (days)", min_value=7, max_value=90, value=30)
-
-        # Scenarios: Define training percentages
-        training_percentages = [0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
-
-        # Backtesting for each scenario
-        st.subheader("Backtesting Results for Different Training Data Percentages")
-        for percentage in training_percentages:
-            st.write(f"### Scenario: {int(percentage * 100)}% Training Data")
-
-            errors, results_df = perform_backtest_with_percentage(
-                data=data, train_percentage=percentage, forecast_horizon=forecast_horizon
-            )
-
-            # Display errors
-            st.write(f"**MAE**: {errors['MAE']:.2f}")
-            st.write(f"**MAPE**: {errors['MAPE']:.2f}%")
-
-            # Plot actual vs predicted
-            st.line_chart(results_df.set_index('Date'))
-
-def build_forecasting_tab(data: DataFrame):
-    st.title("Romania Air Quality and Weather Insights")
-
-    # Sidebar for user inputs
-    st.sidebar.header("Filters")
+def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
+    st.title("Romania Air Quality Forecasting")
 
     # Extract Romania data
-    romania_data = data[data["Country"] == "RO"].copy()
+    romania_data = data.copy()
 
     # Convert 'Date' column to datetime format and drop invalid dates
     romania_data['Date'] = pd.to_datetime(romania_data['Date'], errors='coerce')
@@ -120,35 +80,15 @@ def build_forecasting_tab(data: DataFrame):
         st.write("No pollutants available for API calculation.")
         pivot_data['api'] = None
 
-    # Sidebar: City filter
-    st.sidebar.subheader("City Filter")
-    selected_cities = st.sidebar.multiselect(
-        "Select Cities:",
-        options=pivot_data['city'].unique(),
-        default=pivot_data['city'].unique(), key="uniqueid"
-    )
-
-    # Filter the data based on cities
-    filtered_data = pivot_data[pivot_data['city'].isin(selected_cities)]
-
-    # Display current API data
-    st.subheader("Air Pollution Index (API) Results")
-    if 'api' in filtered_data.columns:
-        display_data = filtered_data[['city', 'date', 'api']].sort_values(by=['city', 'date'])
-        st.write(display_data)
-
     ### Forecasting Section ###
     st.subheader("Air Pollution Index Forecasting with Prophet")
 
-    # Select City for Forecasting
-    forecast_city = st.selectbox("Select a City for Forecasting:", options=selected_cities)
-
     # Filter data for the selected city
-    city_data = filtered_data[filtered_data['city'] == forecast_city]
+    city_data = pivot_data[pivot_data['city'] == selected_city]
 
     # Check if sufficient data exists
     if city_data.empty or city_data['api'].isna().all():
-        st.warning(f"No sufficient API data available for forecasting in {forecast_city}.")
+        st.warning(f"No sufficient API data available for forecasting in {selected_city}.")
         return
 
     # Prepare data for Prophet
@@ -157,6 +97,7 @@ def build_forecasting_tab(data: DataFrame):
     city_data = city_data.rename(columns={"date": "ds", "api": "y"})
 
     # Train the Prophet model
+
     model = Prophet()
     model.fit(city_data)
 
@@ -169,7 +110,7 @@ def build_forecasting_tab(data: DataFrame):
         forecast,
         x='ds',
         y='yhat',
-        title=f"Air Pollution Index Forecast for {forecast_city}",
+        title=f"Air Pollution Index Forecast for {selected_city}",
         labels={"yhat": "Forecasted API", "ds": "Date"}
     )
 
@@ -179,14 +120,8 @@ def build_forecasting_tab(data: DataFrame):
     # Display Plot
     st.plotly_chart(fig)
 
-    # Show forecasted data
-    st.subheader("Forecasted Data")
-    st.write(forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']].tail(30))
-
-    # Forecast horizon input
-    forecast_horizon = st.sidebar.slider("Forecast Horizon (days)", min_value=7, max_value=90, value=30)
     # Scenarios: Define training percentages
-    training_percentages = [0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
+    training_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9]  # 50%, 70%, and 90% of the data
     # Backtesting for each scenario
     st.subheader("Backtesting Results for Different Training Data Percentages")
     for percentage in training_percentages:

@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-def build_air_quality_tab(data: DataFrame):
+def build_air_quality_tab(data: DataFrame, selected_cities):
     # Filter and clean temperature data
     temperature_data = data[data['Specie'] == "temperature"].copy()
 
@@ -16,15 +16,15 @@ def build_air_quality_tab(data: DataFrame):
         temperature_data['Date'] = pd.to_datetime(temperature_data['Date'], errors='coerce')
         temperature_data = temperature_data.dropna(subset=['Date'])
 
-    st.write("Cleaned temperature_data:", temperature_data.head())
+    filtered_temperature_data = temperature_data[temperature_data['City'].isin(selected_cities)]
 
     # Check if there is valid data to plot
-    if not temperature_data.empty:
+    if not filtered_temperature_data.empty:
         st.subheader("Boxplot of Temperature for Different Cities")
 
         # Create a Plotly boxplot
         fig = px.box(
-            temperature_data,
+            filtered_temperature_data,
             x='City',
             y='median',
             color='City',

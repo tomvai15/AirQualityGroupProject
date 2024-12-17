@@ -16,24 +16,34 @@ def load_data(file_path):
     return pd.read_csv(file_path)
 
 data = load_data("data/romania_data.csv")
-st.write("Columns in dataset:", data.columns)
+
+st.title("Romania air quality")
+st.sidebar.header("Filters")
+selected_city = st.sidebar.selectbox("Select a City:", data["City"].unique())
+selected_cities = st.sidebar.multiselect(
+    "Select Cities:",
+    options=data['City'].unique(),
+    default=data['City'].unique()
+)
+
+forecast_horizon = st.sidebar.slider("Forecast Horizon (days)", min_value=7, max_value=90, value=30)
 
 general_tab, humidity_and_temp_tab, air_quality_tab, api_tab, insights_tab, forecasting_tab = st.tabs(["General", "Humidity & Temperature", "Air quality", "API tab'as", "Insights tab'as", "Forecasting"])
 
 with humidity_and_temp_tab:
-    build_humidity_and_temp_tab(data)
+    build_humidity_and_temp_tab(data, selected_city)
 
 with air_quality_tab:
-    build_air_quality_tab(data)
+    build_air_quality_tab(data, selected_cities)
 
 with general_tab:
-    build_general_tab(data)
+    build_general_tab(data, selected_cities)
 
 with api_tab:
-    build_api_tab(data)
+    build_api_tab(data, selected_cities)
 
 with insights_tab:
-    build_insights_tab(data)
+    build_insights_tab(data, selected_cities)
 
 with forecasting_tab:
-    build_forecasting_tab(data)
+    build_forecasting_tab(data, selected_city, forecast_horizon)

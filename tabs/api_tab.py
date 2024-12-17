@@ -3,15 +3,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-def build_api_tab(data: DataFrame):
+def build_api_tab(data: DataFrame, selected_cities):
     # Streamlit App
     st.title("Air Pollution Index (API) by City and Month")
-
-    # Sidebar for user inputs
-    st.sidebar.header("Filters")
-
-    # Extract Romania data
-    romania_data = data[data["Country"] == "RO"].copy()
+    romania_data = data.copy()
 
     # Convert 'Date' column to datetime format and drop invalid dates
     romania_data['Date'] = pd.to_datetime(romania_data['Date'], errors='coerce')
@@ -38,10 +33,6 @@ def build_api_tab(data: DataFrame):
     pivot_data.columns.name = None
     pivot_data.columns = [col.lower() if isinstance(col, str) else col for col in pivot_data.columns]
 
-    # Debugging: Verify pivot table structure
-    st.write("Pivot Table Structure:", pivot_data.head())
-    st.write("Pivot Table Columns:", pivot_data.columns)
-
     # Dynamically calculate API as the maximum value across the available pollutants
     available_pollutants = [col for col in required_pollutants if col in pivot_data.columns]
     if available_pollutants:
@@ -49,14 +40,6 @@ def build_api_tab(data: DataFrame):
     else:
         st.write("No pollutants available for API calculation.")
         pivot_data['api'] = None
-
-    # Sidebar filter: Select specific cities
-    st.sidebar.subheader("City Filter")
-    selected_cities = st.sidebar.multiselect(
-        "Select Cities:",
-        options=pivot_data['city'].unique(),
-        default=pivot_data['city'].unique()
-    )
 
     # Filter the data based on selected cities
     filtered_data = pivot_data[pivot_data['city'].isin(selected_cities)]
