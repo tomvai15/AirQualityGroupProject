@@ -102,7 +102,7 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
     model.fit(city_data)
 
     # Generate future dates for prediction (e.g., next 30 days)
-    future = model.make_future_dataframe(periods=30, freq='D')
+    future = model.make_future_dataframe(periods=forecast_horizon, freq='D')
     forecast = model.predict(future)
 
     # Plot forecast results
@@ -121,7 +121,7 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
     st.plotly_chart(fig)
 
     # Scenarios: Define training percentages
-    training_percentages = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9]  # 50%, 70%, and 90% of the data
+    training_percentages = [0.2, 0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
     # Backtesting for each scenario
     st.subheader("Backtesting Results for Different Training Data Percentages")
     for percentage in training_percentages:
