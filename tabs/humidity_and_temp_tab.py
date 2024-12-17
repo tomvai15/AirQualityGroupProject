@@ -4,39 +4,26 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-def build_humidity_and_temp_tab(data: DataFrame):
-    # Streamlit App
-    st.title("Romania air quality")
-
-    # Sidebar for user inputs
-    st.sidebar.header("Filters")
-
-    romania_data = data[(data["Country"] == "RO")]
-    selected_city = st.sidebar.selectbox("Select a City:", romania_data["City"].unique())
-
+def build_humidity_and_temp_tab(data: DataFrame, selected_city):
     # Filter and clean temperature data
     temperature_data = data[(data["City"] == selected_city) & (data["Specie"] == "temperature")].copy()
     temperature_data['median'] = pd.to_numeric(temperature_data['median'], errors='coerce')
     temperature_data = temperature_data.dropna(subset=['median']).reset_index(drop=True)
-    st.write("Cleaned temperature_data:", temperature_data.head())
 
     # Filter and clean humidity data
     humidity_data = data[(data["City"] == selected_city) & (data["Specie"] == "humidity")].copy()
     humidity_data['median'] = pd.to_numeric(humidity_data['median'], errors='coerce')
     humidity_data = humidity_data.dropna(subset=['median']).reset_index(drop=True)
-    st.write("Cleaned humidity_data:", humidity_data.head())
 
     # Filter and clean PM10 data
     pm10_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm10")].copy()
     pm10_data['median'] = pd.to_numeric(pm10_data['median'], errors='coerce')
     pm10_data = pm10_data.dropna(subset=['median']).reset_index(drop=True)
-    st.write("Cleaned pm10_data:", pm10_data.head())
 
     # Filter and clean PM25 data
     pm25_data = data[(data["City"] == selected_city) & (data["Specie"] == "pm25")].copy()
     pm25_data['median'] = pd.to_numeric(pm25_data['median'], errors='coerce')
     pm25_data = pm25_data.dropna(subset=['median']).reset_index(drop=True)
-    st.write("Cleaned pm25_data:", pm25_data.head())
 
     # Create columns
     col1, col2 = st.columns(2)

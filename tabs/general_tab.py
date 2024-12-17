@@ -3,22 +3,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-def build_general_tab(data: DataFrame):
+def build_general_tab(data: DataFrame, selected_cities):
     # Filter and clean temperature data
     temperature_data = data[data['Specie'] == "temperature"].copy()
     temperature_data['median'] = pd.to_numeric(temperature_data['median'], errors='coerce')
     temperature_data = temperature_data.dropna(subset=['median']).reset_index(drop=True)
 
-    st.write("Cleaned temperature_data:", temperature_data.head())
-
     if not temperature_data.empty:
-        # Multiselect for cities
-        selected_cities = st.multiselect(
-            "Select Cities",
-            temperature_data['City'].unique(),
-            default=temperature_data['City'].unique()
-        )
-
+        
         # Filter temperature data based on selected cities
         filtered_temperature_data = temperature_data[temperature_data['City'].isin(selected_cities)]
 
@@ -55,7 +47,6 @@ def build_general_tab(data: DataFrame):
         filtered_pm10_data['median'] = pd.to_numeric(filtered_pm10_data['median'], errors='coerce')
         filtered_pm10_data = filtered_pm10_data.dropna(subset=['median']).reset_index(drop=True)
 
-        st.write("Cleaned filtered_pm10_data:", filtered_pm10_data.head())
 
         if not filtered_pm10_data.empty:
             st.subheader("Boxplot of PM10 for Selected Cities")
