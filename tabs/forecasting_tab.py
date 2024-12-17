@@ -5,7 +5,7 @@ import plotly.express as px
 from sklearn.metrics import mean_absolute_error, mean_absolute_percentage_error
 from prophet import Prophet
 
-def perform_backtest_with_percentage(data: pd.DataFrame, train_percentage: float, forecast_horizon: int):
+def perform_backtest_with_percentage(data: pd.DataFrame, train_percentage: float, forecast_horizon: int, selected_regressor):
     data['ds'] = pd.to_datetime(data['ds'])
     data = data.sort_values(by='ds')
 
@@ -16,10 +16,12 @@ def perform_backtest_with_percentage(data: pd.DataFrame, train_percentage: float
 
     # Train the Prophet model
     model = Prophet()
+    model.add_regressor(selected_regressor)
     model.fit(train_data)
 
     # Forecast the test period
     future = model.make_future_dataframe(periods=forecast_horizon, freq='D')
+    future[selected_regressor] = data[selected_regressor].iloc[-1]
     forecast = model.predict(future)
 
     # Extract forecasted values
@@ -41,7 +43,7 @@ def perform_backtest_with_percentage(data: pd.DataFrame, train_percentage: float
     errors = {'MAE': mae, 'MAPE': mape}
     return errors, results_df
 
-def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
+def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon, selected_regressor):
     st.title("Romania Air Quality Forecasting")
 
     # Extract Romania data
@@ -58,7 +60,7 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
     required_pollutants = ['pm10', 'pm25', 'no2', 'o3', 'so2', 'co']
 
     # Filter data for required pollutants
-    api_data = romania_data[romania_data['Specie'].str.lower().isin(required_pollutants)].copy()
+    api_data = romania_data[romania_data['Specie'].str.lower().isin(required_pollutants + [selected_regressor])].copy()
 
     # Pivot pollutants into columns
     pivot_data = api_data.pivot_table(
@@ -90,19 +92,21 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
     if city_data.empty or city_data['api'].isna().all():
         st.warning(f"No sufficient API data available for forecasting in {selected_city}.")
         return
-
     # Prepare data for Prophet
-    city_data = city_data[['date', 'api']].dropna()
+    city_data = city_data[['date', 'api', selected_regressor]].dropna()
     city_data['date'] = pd.to_datetime(city_data['date'])
     city_data = city_data.rename(columns={"date": "ds", "api": "y"})
 
     # Train the Prophet model
 
     model = Prophet()
+    model.add_regressor(selected_regressor)
     model.fit(city_data)
 
     # Generate future dates for prediction (e.g., next 30 days)
     future = model.make_future_dataframe(periods=forecast_horizon, freq='D')
+    future[selected_regressor] = city_data[selected_regressor].iloc[-1]
+
     forecast = model.predict(future)
 
     # Plot forecast results
@@ -110,7 +114,7 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
         forecast,
         x='ds',
         y='yhat',
-        title=f"Air Pollution Index Forecast for {selected_city}",
+        title=f"Air Pollution Index Forecast for {selected_city} with {selected_regressor} as regressor",
         labels={"yhat": "Forecasted API", "ds": "Date"}
     )
 
@@ -121,13 +125,13 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon):
     st.plotly_chart(fig)
 
     # Scenarios: Define training percentages
-    training_percentages = [0.2, 0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
+    training_percentages = [0.3, 0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
     # Backtesting for each scenario
     st.subheader("Backtesting Results for Different Training Data Percentages")
     for percentage in training_percentages:
         st.write(f"### Scenario: {int(percentage * 100)}% Training Data")
         errors, results_df = perform_backtest_with_percentage(
-            data=city_data, train_percentage=percentage, forecast_horizon=forecast_horizon
+            data=city_data, train_percentage=percentage, forecast_horizon=forecast_horizon, selected_regressor=selected_regressor
         )
         # Display errors
         st.write(f"**MAE**: {errors['MAE']:.2f}")
