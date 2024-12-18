@@ -128,13 +128,22 @@ def build_forecasting_tab(data: DataFrame, selected_city, forecast_horizon, sele
     training_percentages = [0.3, 0.5, 0.7, 0.9]  # 50%, 70%, and 90% of the data
     # Backtesting for each scenario
     st.subheader("Backtesting Results for Different Training Data Percentages")
-    for percentage in training_percentages:
-        st.write(f"### Scenario: {int(percentage * 100)}% Training Data")
-        errors, results_df = perform_backtest_with_percentage(
-            data=city_data, train_percentage=percentage, forecast_horizon=forecast_horizon, selected_regressor=selected_regressor
-        )
-        # Display errors
-        st.write(f"**MAE**: {errors['MAE']:.2f}")
-        st.write(f"**MAPE**: {errors['MAPE']:.2f}%")
-        # Plot actual vs predicted
-        st.line_chart(results_df.set_index('Date'))
+
+    try:
+        for percentage in training_percentages:
+            st.write(f"### Scenario: {int(percentage * 100)}% Training Data")
+            errors, results_df = perform_backtest_with_percentage(
+                data=city_data, train_percentage=percentage, forecast_horizon=forecast_horizon, selected_regressor=selected_regressor
+            )
+            # Display errors
+            st.write(f"**MAE**: {errors['MAE']:.2f}")
+            st.write(f"**MAPE**: {errors['MAPE']:.2f}%")
+            # Plot actual vs predicted
+            st.line_chart(results_df.set_index('Date'))
+    except:
+        st.write(f"Sorry there is not enough data to do backtesting with selected regressor: {selected_regressor} 30%, 50%, 70% and 90% data")
+
+    st.subheader("Conclusion:")
+    st.subheader("How well does the Prophet model forecast API under different training data scenarios?​")
+    st.write("After providing four sets of data for training (30%, 50%, 70%, 90%), it is observed that there's no singular answer to how much data is most effective. More historical data does not necessarily significantly improve the model's forecasting performance.​ It was observed, that for some cities (e.g. Ploieşti, 90%, MAE: 3.26, MAPE: 12.83%) bigger data set is better, when for others (e.g. Bucharest, 30%, MAE: 3.55, MAPE: 13.63%) smaller set provides better results.")
+    st.write("It seems that when using pressure as a regresson the overall quality of the prediction increases slightly")
